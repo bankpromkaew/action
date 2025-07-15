@@ -1,59 +1,120 @@
 <header>
 
-# Hello GitHub Actions
+# Bear Notes Clone
 
-_Create and run a GitHub Actions workflow._
+A beautiful, minimalist markdown note-taking app inspired by [Bear](https://bear.app/). Built with React and modern web technologies.
 
-</header>
+## ✨ Features
 
-## Step 1: Create a workflow file
+- **Clean, Bear-inspired interface** - Minimal design focused on writing
+- **Live markdown preview** - See your formatted text as you type
+- **Fast search** - Quickly find notes by title or content
+- **Dark/Light themes** - Switch between themes with one click
+- **Local storage** - All your notes are saved locally in your browser
+- **Export notes** - Download your notes as markdown files
+- **Responsive design** - Works great on desktop and mobile
+- **Keyboard shortcuts** - Efficient note-taking workflow
 
-_Welcome to "Hello GitHub Actions"! :wave:_
+## 🚀 Getting Started
 
-**What is _GitHub Actions_?**: GitHub Actions is a flexible way to automate nearly every aspect of your team's software workflow. You can automate testing, continuously deploy, review code, manage issues and pull requests, and much more. The best part, these workflows are stored as code in your repository and easily shared and reused across teams. To learn more, check out these resources:
+### Prerequisites
 
-- The GitHub Actions feature page, see [GitHub Actions](https://github.com/features/actions).
-- The "GitHub Actions" user documentation, see [GitHub Actions](https://docs.github.com/actions).
+- Node.js (v16 or higher)
+- npm or yarn
 
-**What is a _workflow_?**: A workflow is a configurable automated process that will run one or more jobs. Workflows are defined in special files in the `.github/workflows` directory and they execute based on your chosen event. For this exercise, we'll use a `pull_request` event.
+### Installation
 
-- To read more about workflows, jobs, and events, see "[Understanding GitHub Actions](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions)".
-- If you want to learn more about the `pull_request` event before using it, see "[pull_request](https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request)".
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd bear-notes-clone
+```
 
-To get you started, we ran an Actions workflow in your new repository that, among other things, created a branch for you to work in, called `welcome-workflow`.
+2. Install dependencies:
+```bash
+npm install
+```
 
-### :keyboard: Activity: Create a workflow file
+3. Start the development server:
+```bash
+npm run dev
+```
 
-1. Open a new browser tab, and navigate to this same repository. Then, work on the steps in your second tab while you read the instructions in this tab.
-1. Create a pull request. This will contain all of the changes you'll make throughout this part of the course.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-   Click the **Pull Requests** tab, click **New pull request**, set `base: main` and `compare:welcome-workflow`, click **Create pull request**, then click **Create pull request** again.
+## 🎯 Usage
 
-1. Navigate to the **Code** tab.
-1. From the **main** branch dropdown, click on the **welcome-workflow** branch.
-1. Navigate to the `.github/workflows/` folder, then select **Add file** and click on **Create new file**.
-1. In the **Name your file** field, enter `welcome.yml`.
-1. Add the following content to the `welcome.yml` file:
+### Creating Notes
+- Click the **+** button in the sidebar header
+- Start typing to create your first note
+- The note title is automatically extracted from the first line
 
-   ```yaml copy
-   name: Post welcome comment
-   on:
-     pull_request:
-       types: [opened]
-   permissions:
-     pull-requests: write
-   ```
+### Organizing Notes
+- Use the search bar to quickly find notes
+- Notes are automatically sorted by last modified date
+- Click on any note in the sidebar to open it
 
-1. To commit your changes, click **Commit changes**.
-1. Type a commit message, select **Commit directly to the welcome-workflow branch** and click **Commit changes**.
-1. Wait about 20 seconds, then refresh this page (the one you're following instructions from). A separate Actions workflow in the repository (not the workflow you created) will run and will automatically replace the contents of this README file with instructions for the next step.
+### Markdown Support
+- Full GitHub Flavored Markdown support
+- Live preview shows formatted text
+- Toggle preview with the eye icon
+- Supports tables, code blocks, lists, and more
 
-<footer>
+### Themes
+- Click the moon/sun icon to toggle between light and dark themes
+- Your theme preference is automatically saved
 
----
+### Exporting
+- Click the download icon to export the current note as a markdown file
 
-Get help: [Post in our discussion board](https://github.com/orgs/skills/discussions/categories/hello-github-actions) &bull; [Review the GitHub status page](https://www.githubstatus.com/)
+## 🛠️ Built With
 
-&copy; 2023 GitHub &bull; [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md) &bull; [MIT License](https://gh.io/mit)
+- **React 18** - Modern React with hooks
+- **Vite** - Fast build tool and dev server
+- **React Markdown** - Markdown rendering
+- **Lucide React** - Beautiful icons
+- **date-fns** - Date formatting
+- **CSS Variables** - Dynamic theming
 
-</footer>
+## 🎨 Bear-Inspired Design
+
+This app recreates the essential Bear experience:
+
+- **Three-pane layout** - Sidebar, editor, and preview
+- **Clean typography** - Readable fonts and proper spacing
+- **Subtle animations** - Smooth transitions and hover effects
+- **Intuitive navigation** - Easy note switching and search
+- **Focus on writing** - Distraction-free editing experience
+
+## 📱 Browser Support
+
+Works in all modern browsers:
+- Chrome/Chromium
+- Firefox
+- Safari
+- Edge
+
+## 💾 Data Storage
+
+Notes are stored locally in your browser using localStorage. Your data:
+- Stays private and secure
+- Persists between sessions
+- Is not sent to any external servers
+- Can be exported as markdown files
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to:
+- Report bugs
+- Suggest new features
+- Submit pull requests
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Inspired by the beautiful [Bear](https://bear.app/) notes app
+- Icons by [Lucide](https://lucide.dev/)
+- Markdown parsing by [React Markdown](https://github.com/remarkjs/react-markdown)
