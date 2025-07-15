@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIconFile</key>
+	<string></string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSMainNibFile</key>
+	<string>MainMenu</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSSupportsAutomaticTermination</key>
+	<false/>
+	<key>NSSupportsSuddenTermination</key>
+	<false/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Apple Notes Enhancer needs to send Apple Events to interact with the Notes app and provide enhanced functionality like formatting and shortcuts.</string>
+	<key>NSSystemAdministrationUsageDescription</key>
+	<string>Apple Notes Enhancer needs system administration access to monitor keyboard input and provide enhanced Notes functionality.</string>
+	<key>NSAccessibilityUsageDescription</key>
+	<string>Apple Notes Enhancer uses accessibility features to read and interact with Notes content, enabling markdown shortcuts, formatting commands, and other enhancements. This permission is required for the app to function properly.</string>
+	<key>NSInputMonitoringUsageDescription</key>
+	<string>Apple Notes Enhancer monitors keyboard input to detect markdown patterns and slash commands, providing real-time formatting enhancements to Apple Notes. This data is processed locally and never shared.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2025 Notes Enhancer. All rights reserved.</string>
+</dict>
+</plist>
