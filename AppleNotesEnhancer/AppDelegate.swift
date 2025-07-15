@@ -5,24 +5,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     private var notesEnhancer: NotesEnhancer?
     private var statusItem: NSStatusItem?
+    private var permissionCheckTimer: Timer?
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         print("🚀 Apple Notes Enhancer starting...")
         
-        // Create status bar item
+        // Create status bar item first
         setupStatusBar()
         
-        // Check permissions
-        checkPermissions()
-        
-        // Initialize the notes enhancer
-        notesEnhancer = NotesEnhancer()
-        notesEnhancer?.start()
-        
-        print("✅ Apple Notes Enhancer initialized successfully!")
+        // Start with a delay to avoid blocking
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.initializeEnhancer()
+        }
+    }
+    
+    private func initializeEnhancer() {
+        // Check permissions gracefully
+        if checkPermissionsGracefully() {
+            // Initialize the notes enhancer
+            notesEnhancer = NotesEnhancer()
+            notesEnhancer?.start()
+            updateStatusMenu(isWorking: true)
+            print("✅ Apple Notes Enhancer initialized successfully!")
+        } else {
+            // Set up timer to check permissions periodically
+            setupPermissionCheckTimer()
+            updateStatusMenu(isWorking: false)
+            print("⚠️ Waiting for permissions...")
+        }
     }
     
     func applicationWillTerminate(_ aNotification: Notification) {
+        permissionCheckTimer?.invalidate()
         notesEnhancer?.stop()
         print("👋 Apple Notes Enhancer shutting down...")
     }
@@ -41,11 +55,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.toolTip = "Apple Notes Enhancer"
         }
         
+        updateStatusMenu(isWorking: false)
+    }
+    
+    private func updateStatusMenu(isWorking: Bool) {
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Status: Active", action: nil, keyEquivalent: ""))
+        
+        if isWorking {
+            menu.addItem(NSMenuItem(title: "✅ Status: Active", action: nil, keyEquivalent: ""))
+            menu.addItem(NSMenuItem(title: "Features: Markdown, Slash Commands, ⌘P", action: nil, keyEquivalent: ""))
+        } else {
+            menu.addItem(NSMenuItem(title: "⚠️ Status: Needs Permissions", action: nil, keyEquivalent: ""))
+            menu.addItem(NSMenuItem(title: "Click 'Setup Permissions' below", action: nil, keyEquivalent: ""))
+        }
+        
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Open Apple Notes", action: #selector(openNotes), keyEquivalent: "n"))
-        menu.addItem(NSMenuItem(title: "Check Permissions", action: #selector(checkPermissionsAction), keyEquivalent: ""))
+        
+        let permissionItem = NSMenuItem(title: "Setup Permissions", action: #selector(setupPermissions), keyEquivalent: "")
+        menu.addItem(permissionItem)
+        
+        menu.addItem(NSMenuItem(title: "Test Features", action: #selector(showFeatureDemo), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
@@ -53,63 +83,122 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc private func openNotes() {
-        NSWorkspace.shared.launchApplication("Notes")
+        if let notesApp = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Notes") {
+            NSWorkspace.shared.openApplication(at: notesApp, configuration: NSWorkspace.OpenConfiguration())
+        } else {
+            // Fallback
+            NSWorkspace.shared.launchApplication("Notes")
+        }
     }
     
-    @objc private func checkPermissionsAction() {
-        checkPermissions()
+    @objc private func setupPermissions() {
+        showPermissionGuide()
     }
     
-    // MARK: - Permissions
+    @objc private func showFeatureDemo() {
+        showFeatureGuide()
+    }
     
-    private func checkPermissions() {
+    // MARK: - Permission Handling
+    
+    private func checkPermissionsGracefully() -> Bool {
+        // Check accessibility permission
         let accessibilityEnabled = AXIsProcessTrusted()
-        let inputMonitoringEnabled = checkInputMonitoringPermission()
+        
+        // Check input monitoring more safely
+        let inputMonitoringEnabled = checkInputMonitoringGracefully()
         
         print("📋 Permission Status:")
         print("   Accessibility: \(accessibilityEnabled ? "✅" : "❌")")
         print("   Input Monitoring: \(inputMonitoringEnabled ? "✅" : "❌")")
         
-        if !accessibilityEnabled {
-            showPermissionAlert(
-                title: "Accessibility Permission Required",
-                message: "Apple Notes Enhancer needs Accessibility permission to enhance your Notes experience.\n\nGo to System Preferences > Security & Privacy > Privacy > Accessibility and enable 'Apple Notes Enhancer'."
-            )
-        }
-        
-        if !inputMonitoringEnabled {
-            showPermissionAlert(
-                title: "Input Monitoring Permission Required",
-                message: "Apple Notes Enhancer needs Input Monitoring permission to detect keyboard shortcuts.\n\nGo to System Preferences > Security & Privacy > Privacy > Input Monitoring and enable 'Apple Notes Enhancer'."
-            )
-        }
+        return accessibilityEnabled && inputMonitoringEnabled
     }
     
-    private func checkInputMonitoringPermission() -> Bool {
-        // Try to create a global event monitor to test permissions
-        let eventMask = NSEvent.EventTypeMask.keyDown
-        let monitor = NSEvent.addGlobalMonitorForEvents(matching: eventMask) { _ in }
+    private func checkInputMonitoringGracefully() -> Bool {
+        // Try to check input monitoring without triggering system dialogs
+        let eventMask: NSEvent.EventTypeMask = [.keyDown]
+        var hasPermission = false
         
-        if let monitor = monitor {
+        // Create a very brief monitor to test permission
+        if let monitor = NSEvent.addGlobalMonitorForEvents(matching: eventMask, handler: { _ in }) {
+            hasPermission = true
             NSEvent.removeMonitor(monitor)
-            return true
         }
-        return false
+        
+        return hasPermission
     }
     
-    private func showPermissionAlert(title: String, message: String) {
+    private func setupPermissionCheckTimer() {
+        permissionCheckTimer?.invalidate()
+        permissionCheckTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            if self?.checkPermissionsGracefully() == true {
+                self?.permissionCheckTimer?.invalidate()
+                self?.initializeEnhancer()
+            }
+        }
+    }
+    
+    private func showPermissionGuide() {
         DispatchQueue.main.async {
             let alert = NSAlert()
-            alert.messageText = title
-            alert.informativeText = message
-            alert.alertStyle = .warning
+            alert.messageText = "Setup Apple Notes Enhancer"
+            alert.informativeText = """
+            To enable all features, please grant these permissions:
+            
+            1. ACCESSIBILITY:
+               • System Preferences → Security & Privacy → Privacy → Accessibility
+               • Click the lock and enter your password
+               • Check "Apple Notes Enhancer"
+            
+            2. INPUT MONITORING:
+               • System Preferences → Security & Privacy → Privacy → Input Monitoring  
+               • Click the lock and enter your password
+               • Check "Apple Notes Enhancer"
+            
+            The app will detect when permissions are granted and start working automatically.
+            """
+            alert.alertStyle = .informational
             alert.addButton(withTitle: "Open System Preferences")
-            alert.addButton(withTitle: "Later")
+            alert.addButton(withTitle: "I'll Do It Later")
             
             let response = alert.runModal()
             if response == .alertFirstButtonReturn {
-                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+                // Open System Preferences to Privacy settings
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy") {
+                    NSWorkspace.shared.open(url)
+                }
             }
+        }
+    }
+    
+    private func showFeatureGuide() {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "Apple Notes Enhancer Features"
+            alert.informativeText = """
+            Once permissions are granted, try these features in Apple Notes:
+            
+            📝 MARKDOWN SHORTCUTS:
+            • Type "# " → becomes a title
+            • Type "## " → becomes a heading
+            • Type "- " → becomes a bullet list
+            • Type "> " → becomes a blockquote
+            • Type "[] " → becomes a checklist
+            
+            ⚡ SLASH COMMANDS:
+            • Type "/heading " → format as heading
+            • Type "/checklist " → create checklist
+            • Type "/table " → insert table
+            
+            🎯 COMMAND PALETTE:
+            • Press ⌘P in Notes → search commands
+            
+            The app only works when Apple Notes is the active application.
+            """
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "Got It!")
+            alert.runModal()
         }
     }
 }

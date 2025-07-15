@@ -13,24 +13,35 @@ class KeyboardMonitor {
     
     // MARK: - Lifecycle
     
-    func start() {
-        guard !isMonitoring else { return }
+    func start() -> Bool {
+        guard !isMonitoring else { return true }
         
         print("⌨️ Starting keyboard monitoring...")
         
-        // Set up global event monitoring (when app is not in focus)
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
-            self?.handleKeyEvent(event)
+        // Try to set up global event monitoring with error handling
+        do {
+            globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
+                self?.handleKeyEventSafely(event)
+            }
+            
+            // Set up local event monitoring
+            localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
+                self?.handleKeyEventSafely(event)
+                return event // Pass through the event
+            }
+            
+            if globalMonitor != nil {
+                isMonitoring = true
+                print("✅ Keyboard monitoring started successfully")
+                return true
+            } else {
+                print("⚠️ Global monitoring not available (permissions needed)")
+                return false
+            }
+        } catch {
+            print("❌ Failed to start keyboard monitoring: \(error)")
+            return false
         }
-        
-        // Set up local event monitoring (when app is in focus)
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
-            self?.handleKeyEvent(event)
-            return event // Pass through the event
-        }
-        
-        isMonitoring = true
-        print("✅ Keyboard monitoring started")
     }
     
     func stop() {
@@ -52,30 +63,16 @@ class KeyboardMonitor {
     
     // MARK: - Event Handling
     
-    private func handleKeyEvent(_ event: NSEvent) {
+    private func handleKeyEventSafely(_ event: NSEvent) {
+        guard isMonitoring else { return }
+        
         let keyCode = event.keyCode
         let modifiers = event.modifierFlags
         
-        // Debug logging for development
-        if let character = Self.keyCodeToCharacter(keyCode) {
-            let modifierString = formatModifiers(modifiers)
-            let debugInfo = modifierString.isEmpty ? "\(character)" : "\(modifierString)+\(character)"
-            print("🔍 Key pressed: \(debugInfo) (code: \(keyCode))")
+        // Call the callback safely
+        DispatchQueue.main.async { [weak self] in
+            self?.onKeyPressed?(keyCode, modifiers)
         }
-        
-        // Call the callback
-        onKeyPressed?(keyCode, modifiers)
-    }
-    
-    private func formatModifiers(_ modifiers: NSEvent.ModifierFlags) -> String {
-        var components: [String] = []
-        
-        if modifiers.contains(.command) { components.append("Cmd") }
-        if modifiers.contains(.shift) { components.append("Shift") }
-        if modifiers.contains(.option) { components.append("Opt") }
-        if modifiers.contains(.control) { components.append("Ctrl") }
-        
-        return components.joined(separator: "+")
     }
     
     // MARK: - Key Code Utilities
@@ -91,25 +88,21 @@ class KeyboardMonitor {
             38: "j", 39: "'", 40: "k", 41: ";", 42: "\\", 43: ",", 44: "/", 45: "n", 46: "m",
             47: ".", 48: "\t", 49: " ", 50: "`", 51: "⌫", 53: "⎋",
             
-            // Function keys
-            122: "F1", 120: "F2", 99: "F3", 118: "F4", 96: "F5", 97: "F6", 98: "F7", 100: "F8",
-            101: "F9", 109: "F10", 103: "F11", 111: "F12",
-            
             // Arrow keys
-            123: "←", 124: "→", 125: "↓", 126: "↑",
-            
-            // Other special keys
-            116: "Page Up", 121: "Page Down", 115: "Home", 119: "End",
-            114: "Help", 117: "Delete"
+            123: "←", 124: "→", 125: "↓", 126: "↑"
         ]
         
         return keyCodeMap[keyCode]
     }
     
-    // MARK: - Event Injection
+    // MARK: - Safe Event Injection
     
-    static func sendKeyEvent(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) {
-        print("📤 Sending key event: \(keyCode) with modifiers: \(modifiers)")
+    static func sendKeyEventSafely(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) {
+        // Only send events if we can do so safely
+        guard AXIsProcessTrusted() else {
+            print("⚠️ Cannot send key events - accessibility permission needed")
+            return
+        }
         
         // Convert NSEvent modifiers to CGEvent flags
         var cgFlags: CGEventFlags = []
@@ -119,98 +112,97 @@ class KeyboardMonitor {
         if modifiers.contains(.option) { cgFlags.insert(.maskAlternate) }
         if modifiers.contains(.control) { cgFlags.insert(.maskControl) }
         
-        // Create and send key down event
-        if let keyDownEvent = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(keyCode), keyDown: true) {
-            keyDownEvent.flags = cgFlags
-            keyDownEvent.post(tap: .cghidEventTap)
-        }
-        
-        // Small delay between key down and key up
-        usleep(10000) // 10ms
-        
-        // Create and send key up event
-        if let keyUpEvent = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(keyCode), keyDown: false) {
-            keyUpEvent.flags = cgFlags
-            keyUpEvent.post(tap: .cghidEventTap)
-        }
-    }
-    
-    static func sendTextAsKeyEvents(_ text: String) {
-        print("📝 Sending text as key events: \(text)")
-        
-        for character in text {
-            if let keyCode = characterToKeyCode(character) {
-                sendKeyEvent(keyCode: keyCode, modifiers: [])
-                usleep(20000) // 20ms delay between characters
+        // Create and send key events with error handling
+        autoreleasepool {
+            // Create key down event
+            if let keyDownEvent = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(keyCode), keyDown: true) {
+                keyDownEvent.flags = cgFlags
+                keyDownEvent.post(tap: .cghidEventTap)
+                
+                // Small delay
+                usleep(5000) // 5ms
+                
+                // Create key up event
+                if let keyUpEvent = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(keyCode), keyDown: false) {
+                    keyUpEvent.flags = cgFlags
+                    keyUpEvent.post(tap: .cghidEventTap)
+                }
             }
         }
     }
     
-    private static func characterToKeyCode(_ character: Character) -> UInt16? {
-        // Reverse mapping from character to key code
-        let charToKeyMap: [Character: UInt16] = [
-            "a": 0, "s": 1, "d": 2, "f": 3, "h": 4, "g": 5, "z": 6, "x": 7, "c": 8, "v": 9,
-            "b": 11, "q": 12, "w": 13, "e": 14, "r": 15, "y": 16, "t": 17,
-            "1": 18, "2": 19, "3": 20, "4": 21, "6": 22, "5": 23, "=": 24, "9": 25, "7": 26,
-            "-": 27, "8": 28, "0": 29, "]": 30, "o": 31, "u": 32, "[": 33, "i": 34, "p": 35,
-            "l": 37, "j": 38, "'": 39, "k": 40, ";": 41, "\\": 42, ",": 43, "/": 44, "n": 45,
-            "m": 46, ".": 47, " ": 49, "`": 50
-        ]
+    // MARK: - Safe Clipboard Operations
+    
+    static func typeTextViaClipboardSafely(_ text: String) {
+        guard !text.isEmpty else { return }
         
-        return charToKeyMap[Character(character.lowercased())]
-    }
-    
-    // MARK: - Special Key Methods
-    
-    static func sendBackspace(count: Int = 1) {
-        for _ in 0..<count {
-            sendKeyEvent(keyCode: 51, modifiers: []) // Backspace key
-            usleep(50000) // 50ms delay between backspaces
-        }
-    }
-    
-    static func sendEnter() {
-        sendKeyEvent(keyCode: 36, modifiers: []) // Enter key
-    }
-    
-    static func sendTab() {
-        sendKeyEvent(keyCode: 48, modifiers: []) // Tab key
-    }
-    
-    static func sendEscape() {
-        sendKeyEvent(keyCode: 53, modifiers: []) // Escape key
-    }
-    
-    // MARK: - Clipboard Operations
-    
-    static func typeTextViaClipboard(_ text: String) {
-        print("📋 Typing text via clipboard: \(text)")
+        print("📋 Typing text via clipboard: \(text.prefix(20))...")
         
         // Save current clipboard content
         let pasteboard = NSPasteboard.general
-        let originalContent = pasteboard.string(forType: .string)
+        let originalTypes = pasteboard.types ?? []
+        var originalContent: [NSPasteboard.PasteboardType: Any] = [:]
+        
+        // Save original clipboard data
+        for type in originalTypes {
+            if let data = pasteboard.data(forType: type) {
+                originalContent[type] = data
+            } else if let string = pasteboard.string(forType: type) {
+                originalContent[type] = string
+            }
+        }
         
         // Set new content to clipboard
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
         
         // Send Command+V to paste
-        sendKeyEvent(keyCode: 9, modifiers: [.command]) // V key with Command
+        sendKeyEventSafely(keyCode: 9, modifiers: [.command]) // V key with Command
         
         // Restore original clipboard content after a delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             pasteboard.clearContents()
-            if let original = originalContent {
-                pasteboard.setString(original, forType: .string)
+            
+            // Restore original data
+            for (type, content) in originalContent {
+                if let data = content as? Data {
+                    pasteboard.setData(data, forType: type)
+                } else if let string = content as? String {
+                    pasteboard.setString(string, forType: type)
+                }
             }
         }
     }
     
-    // MARK: - Advanced Key Combinations
+    // MARK: - Safe Special Key Methods
     
-    static func sendFormattingShortcut(_ shortcut: FormattingShortcut) {
+    static func sendBackspaceSafely(count: Int = 1) {
+        guard count > 0 else { return }
+        
+        for i in 0..<count {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.02) {
+                sendKeyEventSafely(keyCode: 51, modifiers: []) // Backspace key
+            }
+        }
+    }
+    
+    static func sendEnterSafely() {
+        sendKeyEventSafely(keyCode: 36, modifiers: []) // Enter key
+    }
+    
+    static func sendTabSafely() {
+        sendKeyEventSafely(keyCode: 48, modifiers: []) // Tab key
+    }
+    
+    static func sendEscapeSafely() {
+        sendKeyEventSafely(keyCode: 53, modifiers: []) // Escape key
+    }
+    
+    // MARK: - Safe Advanced Key Combinations
+    
+    static func sendFormattingShortcutSafely(_ shortcut: FormattingShortcut) {
         let (keyCode, modifiers) = shortcut.keyCodeAndModifiers
-        sendKeyEvent(keyCode: keyCode, modifiers: modifiers)
+        sendKeyEventSafely(keyCode: keyCode, modifiers: modifiers)
     }
     
     enum FormattingShortcut {
@@ -252,5 +244,19 @@ class KeyboardMonitor {
                 return (46, [.command, .shift]) // M
             }
         }
+    }
+    
+    // MARK: - Legacy Methods (Deprecated but kept for compatibility)
+    
+    static func sendKeyEvent(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) {
+        sendKeyEventSafely(keyCode: keyCode, modifiers: modifiers)
+    }
+    
+    static func typeTextViaClipboard(_ text: String) {
+        typeTextViaClipboardSafely(text)
+    }
+    
+    static func sendFormattingShortcut(_ shortcut: FormattingShortcut) {
+        sendFormattingShortcutSafely(shortcut)
     }
 }
