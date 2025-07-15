@@ -47,7 +47,7 @@ class NotesEnhancer {
         formattingOverlay = FormattingOverlay()
         
         // Start monitoring with error handling
-        if !keyboardMonitor?.start() ?? false {
+        if !(keyboardMonitor?.start() ?? false) {
             throw NSError(domain: "NotesEnhancer", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not start keyboard monitoring"])
         }
     }
