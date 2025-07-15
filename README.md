@@ -51,7 +51,7 @@ This is a **macOS plugin** that supercharges your existing Apple Notes app with:
 - Only operates when Notes is in focus
 - Seamless integration with existing Notes workflow
 
-## 📥 Plugin Installation
+## 📥 Plugin Installation & Usage
 
 ### Quick Install (Recommended)
 1. **Download**: Get the latest release from [GitHub Releases](https://github.com/your-username/apple-notes-enhancer/releases/latest)
@@ -59,6 +59,15 @@ This is a **macOS plugin** that supercharges your existing Apple Notes app with:
 3. **Install**: Drag `Apple Notes Enhancer.app` to your `/Applications` folder
 4. **Launch**: Open the app (it appears in your menu bar)
 5. **Permissions**: Grant Accessibility and Input Monitoring when prompted
+
+### How to Use
+**📖 [Complete User Guide](USER_GUIDE.md)** | **⚡ [Quick Start Guide](QUICK_START.md)**
+
+**Essential shortcuts:**
+- Type `# ` for headings, `- ` for lists, `> ` for quotes
+- Use `/heading`, `/checklist`, `/quote` for instant formatting  
+- Press `⌘P` in Notes for command palette
+- Select text to see visual formatting toolbar
 
 ### Required Permissions
 - **Accessibility**: Allows reading and modifying Notes content
