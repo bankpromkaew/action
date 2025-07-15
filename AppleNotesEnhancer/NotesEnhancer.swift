@@ -4,7 +4,6 @@ import ApplicationServices
 class NotesEnhancer {
     
     private var keyboardMonitor: KeyboardMonitor?
-    private var accessibilityManager: AccessibilityManager?
     private var formattingOverlay: FormattingOverlay?
     
     private var isActive = false
@@ -12,7 +11,10 @@ class NotesEnhancer {
     
     // Current text buffer for command detection
     private var textBuffer = ""
-    private let maxBufferLength = 50
+    private let maxBufferLength = 30
+    
+    // Debounce processing to avoid overwhelming the system
+    private var processTimer: Timer?
     
     // MARK: - Lifecycle
     
@@ -21,29 +23,39 @@ class NotesEnhancer {
         
         print("🔧 Starting Notes Enhancer components...")
         
-        // Initialize components
+        // Initialize components with error handling
+        do {
+            try initializeComponents()
+            setupAppMonitoring()
+            isActive = true
+            print("✅ Notes Enhancer started successfully")
+        } catch {
+            print("❌ Failed to start Notes Enhancer: \(error)")
+        }
+    }
+    
+    private func initializeComponents() throws {
+        // Initialize keyboard monitor
         keyboardMonitor = KeyboardMonitor()
-        accessibilityManager = AccessibilityManager()
-        formattingOverlay = FormattingOverlay()
-        
-        // Set up keyboard monitoring
-        keyboardMonitor?.onKeyPressed = { [weak self] in
-            self?.handleKeyPress($0, modifiers: $1)
+        keyboardMonitor?.onKeyPressed = { [weak self] keyCode, modifiers in
+            DispatchQueue.main.async {
+                self?.handleKeyPress(keyCode, modifiers: modifiers)
+            }
         }
         
-        // Set up app monitoring
-        setupAppMonitoring()
+        // Initialize formatting overlay (safe fallback)
+        formattingOverlay = FormattingOverlay()
         
-        // Start monitoring
-        keyboardMonitor?.start()
-        
-        isActive = true
-        print("✅ Notes Enhancer started successfully")
+        // Start monitoring with error handling
+        if !(keyboardMonitor?.start() ?? false) {
+            throw NSError(domain: "NotesEnhancer", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not start keyboard monitoring"])
+        }
     }
     
     func stop() {
         guard isActive else { return }
         
+        processTimer?.invalidate()
         keyboardMonitor?.stop()
         formattingOverlay?.hide()
         
@@ -54,7 +66,7 @@ class NotesEnhancer {
     // MARK: - App Monitoring
     
     private func setupAppMonitoring() {
-        // Monitor app switching
+        // Monitor app switching safely
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil,
@@ -98,20 +110,14 @@ class NotesEnhancer {
         // Update text buffer for command detection
         updateTextBuffer(keyCode: keyCode, modifiers: modifiers)
         
-        // Check for commands
-        processTextBuffer()
+        // Process with debouncing to avoid overwhelming
+        debounceProcessing()
     }
     
     private func handleSpecialKeyCombinations(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) -> Bool {
         // Command+P for command palette
         if modifiers.contains(.command) && keyCode == 35 { // P key
             showCommandPalette()
-            return true
-        }
-        
-        // Command+Shift+M for markdown conversion
-        if modifiers.contains([.command, .shift]) && keyCode == 46 { // M key
-            convertToMarkdown()
             return true
         }
         
@@ -124,7 +130,7 @@ class NotesEnhancer {
             return
         }
         
-        // Convert key code to character
+        // Convert key code to character safely
         if let character = KeyboardMonitor.keyCodeToCharacter(keyCode) {
             textBuffer.append(character)
             
@@ -137,6 +143,13 @@ class NotesEnhancer {
         // Clear buffer on certain keys
         if keyCode == 36 || keyCode == 48 { // Enter or Tab
             textBuffer = ""
+        }
+    }
+    
+    private func debounceProcessing() {
+        processTimer?.invalidate()
+        processTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { [weak self] _ in
+            self?.processTextBuffer()
         }
     }
     
@@ -158,15 +171,14 @@ class NotesEnhancer {
     
     private func detectSlashCommand() -> String? {
         let commands = [
-            "/heading", "/h1", "/title",
-            "/subheading", "/h2",
-            "/h3", "/subhead",
-            "/body", "/normal",
+            "/heading", "/h1",
+            "/subheading", "/h2", 
+            "/body",
             "/checklist", "/todo",
-            "/bulletlist", "/bulleted",
-            "/numbered", "/numberedlist",
-            "/quote", "/blockquote",
-            "/code", "/monostyled",
+            "/bulletlist", 
+            "/numbered",
+            "/quote",
+            "/code",
             "/table"
         ]
         
@@ -184,7 +196,6 @@ class NotesEnhancer {
             "# ", "## ", "### ",  // Headers
             "- ", "* ",           // Lists
             "> ",                 // Blockquote
-            "```",               // Code block
             "[] "                // Checklist
         ]
         
@@ -202,30 +213,29 @@ class NotesEnhancer {
     private func executeSlashCommand(_ command: String) {
         print("⚡ Executing slash command: \(command)")
         
-        // Remove the command from the text
-        removeLastCharacters(command.count + 1) // +1 for the space
+        // Remove the command from the text safely
+        safelyRemoveLastCharacters(command.count + 1) // +1 for the space
         
+        // Apply formatting based on command
         switch command {
-        case "/heading", "/h1", "/title":
-            applyFormatting(.title)
+        case "/heading", "/h1":
+            applyFormattingSafely(.title)
         case "/subheading", "/h2":
-            applyFormatting(.heading)
-        case "/h3", "/subhead":
-            applyFormatting(.subheading)
-        case "/body", "/normal":
-            applyFormatting(.body)
+            applyFormattingSafely(.heading)
+        case "/body":
+            applyFormattingSafely(.body)
         case "/checklist", "/todo":
-            insertChecklist()
-        case "/bulletlist", "/bulleted":
-            applyFormatting(.bulleted)
-        case "/numbered", "/numberedlist":
-            applyFormatting(.numbered)
-        case "/quote", "/blockquote":
-            applyFormatting(.quote)
-        case "/code", "/monostyled":
-            applyFormatting(.monostyled)
+            insertChecklistSafely()
+        case "/bulletlist":
+            applyFormattingSafely(.bulleted)
+        case "/numbered":
+            applyFormattingSafely(.numbered)
+        case "/quote":
+            applyFormattingSafely(.quote)
+        case "/code":
+            applyFormattingSafely(.monostyled)
         case "/table":
-            insertTable()
+            insertTableSafely()
         default:
             break
         }
@@ -236,24 +246,22 @@ class NotesEnhancer {
     private func applyMarkdownFormatting(_ pattern: String) {
         print("🎨 Applying markdown pattern: \(pattern)")
         
-        // Remove the markdown syntax
-        removeLastCharacters(pattern.count)
+        // Remove the markdown syntax safely
+        safelyRemoveLastCharacters(pattern.count)
         
         switch pattern {
         case "# ":
-            applyFormatting(.title)
+            applyFormattingSafely(.title)
         case "## ":
-            applyFormatting(.heading)
+            applyFormattingSafely(.heading)
         case "### ":
-            applyFormatting(.subheading)
+            applyFormattingSafely(.subheading)
         case "- ", "* ":
-            applyFormatting(.bulleted)
+            applyFormattingSafely(.bulleted)
         case "> ":
-            applyFormatting(.quote)
-        case "```":
-            applyFormatting(.monostyled)
+            applyFormattingSafely(.quote)
         case "[] ":
-            insertChecklist()
+            insertChecklistSafely()
         default:
             break
         }
@@ -261,104 +269,97 @@ class NotesEnhancer {
         textBuffer = ""
     }
     
-    // MARK: - Formatting Actions
+    // MARK: - Safe Formatting Actions
     
     private enum FormattingStyle {
         case title, heading, subheading, body
         case bulleted, numbered, quote, monostyled
     }
     
-    private func applyFormatting(_ style: FormattingStyle) {
-        // This would use accessibility APIs to change formatting in Notes
-        // For now, we'll simulate the keyboard shortcuts that Notes uses
+    private func applyFormattingSafely(_ style: FormattingStyle) {
+        guard isNotesActive else { return }
         
         let keySequence: [(UInt16, NSEvent.ModifierFlags)]
         
         switch style {
         case .title:
-            // Command+Shift+T for Title
-            keySequence = [(17, [.command, .shift])] // T key
+            keySequence = [(17, [.command, .shift])] // Command+Shift+T
         case .heading:
-            // Command+Shift+H for Heading
-            keySequence = [(4, [.command, .shift])] // H key
+            keySequence = [(4, [.command, .shift])]  // Command+Shift+H
         case .subheading:
-            // Command+Shift+J for Subheading
-            keySequence = [(38, [.command, .shift])] // J key
+            keySequence = [(38, [.command, .shift])] // Command+Shift+J
         case .body:
-            // Command+Shift+B for Body
-            keySequence = [(11, [.command, .shift])] // B key
+            keySequence = [(11, [.command, .shift])] // Command+Shift+B
         case .bulleted:
-            // Command+Shift+8 for Bulleted list
-            keySequence = [(28, [.command, .shift])] // 8 key
+            keySequence = [(28, [.command, .shift])] // Command+Shift+8
         case .numbered:
-            // Command+Shift+7 for Numbered list
-            keySequence = [(26, [.command, .shift])] // 7 key
+            keySequence = [(26, [.command, .shift])] // Command+Shift+7
         case .quote:
-            // Command+' for Quote (if available)
-            keySequence = [(39, [.command])] // ' key
+            keySequence = [(39, [.command])]         // Command+'
         case .monostyled:
-            // Command+Shift+M for Monostyled
-            keySequence = [(46, [.command, .shift])] // M key
+            keySequence = [(46, [.command, .shift])] // Command+Shift+M
         }
         
-        // Send the keyboard events
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.sendKeySequence(keySequence)
+        // Send the keyboard events with delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            self.sendKeySequenceSafely(keySequence)
         }
     }
     
-    private func insertChecklist() {
+    private func insertChecklistSafely() {
+        guard isNotesActive else { return }
         // Use Notes' checklist shortcut: Shift+Command+U
-        let keySequence: [(UInt16, NSEvent.ModifierFlags)] = [(32, [.command, .shift])] // U key
+        let keySequence: [(UInt16, NSEvent.ModifierFlags)] = [(32, [.command, .shift])]
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.sendKeySequence(keySequence)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            self.sendKeySequenceSafely(keySequence)
         }
     }
     
-    private func insertTable() {
-        // Insert a basic table structure
+    private func insertTableSafely() {
+        guard isNotesActive else { return }
+        // Insert a basic table structure via clipboard
         let tableText = """
         
-        | Column 1 | Column 2 | Column 3 |
+        | Header 1 | Header 2 | Header 3 |
         |----------|----------|----------|
-        |          |          |          |
-        |          |          |          |
+        | Cell 1   | Cell 2   | Cell 3   |
         
         """
         
-        typeText(tableText)
+        typeTextSafely(tableText)
     }
     
-    // MARK: - Text Operations
+    // MARK: - Safe Text Operations
     
-    private func removeLastCharacters(_ count: Int) {
-        for _ in 0..<count {
-            sendKeyEvent(keyCode: 51, modifiers: []) // Backspace
-        }
-    }
-    
-    private func typeText(_ text: String) {
-        for character in text {
-            if character == "\n" {
-                sendKeyEvent(keyCode: 36, modifiers: []) // Enter
-            } else {
-                // For simplicity, we'll use the pasteboard
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(String(character), forType: .string)
-                sendKeyEvent(keyCode: 9, modifiers: [.command]) // Command+V
+    private func safelyRemoveLastCharacters(_ count: Int) {
+        guard count > 0 && isNotesActive else { return }
+        
+        // Send backspaces with small delays
+        for i in 0..<count {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.01) {
+                KeyboardMonitor.sendKeyEventSafely(keyCode: 51, modifiers: []) // Backspace
             }
         }
     }
     
-    private func sendKeySequence(_ sequence: [(UInt16, NSEvent.ModifierFlags)]) {
-        for (keyCode, modifiers) in sequence {
-            sendKeyEvent(keyCode: keyCode, modifiers: modifiers)
+    private func typeTextSafely(_ text: String) {
+        guard isNotesActive else { return }
+        
+        // Use clipboard method for safety
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            KeyboardMonitor.typeTextViaClipboardSafely(text)
         }
     }
     
-    private func sendKeyEvent(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) {
-        KeyboardMonitor.sendKeyEvent(keyCode: keyCode, modifiers: modifiers)
+    private func sendKeySequenceSafely(_ sequence: [(UInt16, NSEvent.ModifierFlags)]) {
+        guard isNotesActive else { return }
+        
+        for (index, (keyCode, modifiers)) in sequence.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.02) {
+                KeyboardMonitor.sendKeyEventSafely(keyCode: keyCode, modifiers: modifiers)
+            }
+        }
     }
     
     // MARK: - UI Actions
@@ -366,11 +367,5 @@ class NotesEnhancer {
     private func showCommandPalette() {
         print("🎯 Showing command palette")
         formattingOverlay?.showCommandPalette()
-    }
-    
-    private func convertToMarkdown() {
-        print("📝 Converting selection to markdown")
-        // This would get the current selection and convert it to markdown
-        // Implementation depends on accessibility API integration
     }
 }

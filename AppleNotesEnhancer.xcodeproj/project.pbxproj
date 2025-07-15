@@ -10,7 +10,6 @@
 		A1234567890ABCDEF001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890ABCDEF002 /* AppDelegate.swift */; };
 		A1234567890ABCDEF003 /* NotesEnhancer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890ABCDEF004 /* NotesEnhancer.swift */; };
 		A1234567890ABCDEF005 /* KeyboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890ABCDEF006 /* KeyboardMonitor.swift */; };
-		A1234567890ABCDEF007 /* AccessibilityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890ABCDEF008 /* AccessibilityManager.swift */; };
 		A1234567890ABCDEF009 /* FormattingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890ABCDEF010 /* FormattingOverlay.swift */; };
 		A1234567890ABCDEF011 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1234567890ABCDEF012 /* Assets.xcassets */; };
 		A1234567890ABCDEF013 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = A1234567890ABCDEF014 /* MainMenu.xib */; };
@@ -21,7 +20,6 @@
 		A1234567890ABCDEF002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1234567890ABCDEF004 /* NotesEnhancer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesEnhancer.swift; sourceTree = "<group>"; };
 		A1234567890ABCDEF006 /* KeyboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardMonitor.swift; sourceTree = "<group>"; };
-		A1234567890ABCDEF008 /* AccessibilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityManager.swift; sourceTree = "<group>"; };
 		A1234567890ABCDEF010 /* FormattingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormattingOverlay.swift; sourceTree = "<group>"; };
 		A1234567890ABCDEF012 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1234567890ABCDEF015 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
@@ -54,7 +52,6 @@
 				A1234567890ABCDEF002 /* AppDelegate.swift */,
 				A1234567890ABCDEF004 /* NotesEnhancer.swift */,
 				A1234567890ABCDEF006 /* KeyboardMonitor.swift */,
-				A1234567890ABCDEF008 /* AccessibilityManager.swift */,
 				A1234567890ABCDEF010 /* FormattingOverlay.swift */,
 				A1234567890ABCDEF012 /* Assets.xcassets */,
 				A1234567890ABCDEF014 /* MainMenu.xib */,
@@ -145,7 +142,6 @@
 				A1234567890ABCDEF001 /* AppDelegate.swift in Sources */,
 				A1234567890ABCDEF003 /* NotesEnhancer.swift in Sources */,
 				A1234567890ABCDEF005 /* KeyboardMonitor.swift in Sources */,
-				A1234567890ABCDEF007 /* AccessibilityManager.swift in Sources */,
 				A1234567890ABCDEF009 /* FormattingOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

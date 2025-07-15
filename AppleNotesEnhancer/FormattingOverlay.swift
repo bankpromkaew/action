@@ -2,125 +2,19 @@ import Cocoa
 
 class FormattingOverlay {
     
-    private var formattingWindow: NSWindow?
     private var commandPaletteWindow: NSWindow?
     private var isVisible = false
     
     // MARK: - Initialization
     
     init() {
-        setupFormattingBar()
         setupCommandPalette()
-    }
-    
-    // MARK: - Formatting Bar
-    
-    private func setupFormattingBar() {
-        let windowFrame = NSRect(x: 0, y: 0, width: 400, height: 60)
-        
-        formattingWindow = NSWindow(
-            contentRect: windowFrame,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-        
-        guard let window = formattingWindow else { return }
-        
-        // Configure window properties
-        window.level = NSWindow.Level.floating
-        window.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.95)
-        window.hasShadow = true
-        window.isOpaque = false
-        window.ignoresMouseEvents = false
-        window.collectionBehavior = [.canJoinAllSpaces, .stationary]
-        
-        // Create content view
-        let contentView = FormattingBarView()
-        contentView.onButtonPressed = { [weak self] action in
-            self?.handleFormattingAction(action)
-        }
-        
-        window.contentView = contentView
-        
-        // Add visual effects
-        let visualEffectView = NSVisualEffectView()
-        visualEffectView.material = .hudWindow
-        visualEffectView.blendingMode = .behindWindow
-        visualEffectView.state = .active
-        
-        contentView.addSubview(visualEffectView)
-        visualEffectView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            visualEffectView.topAnchor.constraint(equalTo: contentView.topAnchor),
-            visualEffectView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            visualEffectView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            visualEffectView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
-        ])
-        
-        contentView.layer?.cornerRadius = 8
-        contentView.layer?.masksToBounds = true
-    }
-    
-    private func handleFormattingAction(_ action: FormattingAction) {
-        print("🎨 Handling formatting action: \(action)")
-        
-        switch action {
-        case .bold:
-            KeyboardMonitor.sendFormattingShortcut(.bold)
-        case .italic:
-            KeyboardMonitor.sendFormattingShortcut(.italic)
-        case .underline:
-            KeyboardMonitor.sendFormattingShortcut(.underline)
-        case .title:
-            KeyboardMonitor.sendFormattingShortcut(.title)
-        case .heading:
-            KeyboardMonitor.sendFormattingShortcut(.heading)
-        case .subheading:
-            KeyboardMonitor.sendFormattingShortcut(.subheading)
-        case .body:
-            KeyboardMonitor.sendFormattingShortcut(.body)
-        case .checklist:
-            KeyboardMonitor.sendFormattingShortcut(.checklist)
-        case .bulletedList:
-            KeyboardMonitor.sendFormattingShortcut(.bulletedList)
-        case .numberedList:
-            KeyboardMonitor.sendFormattingShortcut(.numberedList)
-        case .monostyled:
-            KeyboardMonitor.sendFormattingShortcut(.monostyled)
-        case .insertLink:
-            insertLink()
-        case .insertTable:
-            insertTable()
-        }
-        
-        // Hide formatting bar after use
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.hideFormattingBar()
-        }
-    }
-    
-    private func insertLink() {
-        let linkText = "[Link Text](https://example.com)"
-        KeyboardMonitor.typeTextViaClipboard(linkText)
-    }
-    
-    private func insertTable() {
-        let tableText = """
-        
-        | Column 1 | Column 2 | Column 3 |
-        |----------|----------|----------|
-        |          |          |          |
-        |          |          |          |
-        
-        """
-        KeyboardMonitor.typeTextViaClipboard(tableText)
     }
     
     // MARK: - Command Palette
     
     private func setupCommandPalette() {
-        let windowFrame = NSRect(x: 0, y: 0, width: 500, height: 300)
+        let windowFrame = NSRect(x: 0, y: 0, width: 400, height: 250)
         
         commandPaletteWindow = NSWindow(
             contentRect: windowFrame,
@@ -133,14 +27,14 @@ class FormattingOverlay {
         
         // Configure window properties
         window.level = NSWindow.Level.floating
-        window.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.95)
+        window.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.95)
         window.hasShadow = true
         window.isOpaque = false
         window.ignoresMouseEvents = false
         window.collectionBehavior = [.canJoinAllSpaces, .stationary]
         
         // Create content view
-        let contentView = CommandPaletteView()
+        let contentView = SimpleCommandPaletteView()
         contentView.onCommandSelected = { [weak self] command in
             self?.handleCommand(command)
         }
@@ -150,22 +44,11 @@ class FormattingOverlay {
         
         window.contentView = contentView
         
-        // Add visual effects
-        let visualEffectView = NSVisualEffectView()
-        visualEffectView.material = .hudWindow
-        visualEffectView.blendingMode = .behindWindow
-        visualEffectView.state = .active
-        
-        contentView.addSubview(visualEffectView)
-        visualEffectView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            visualEffectView.topAnchor.constraint(equalTo: contentView.topAnchor),
-            visualEffectView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            visualEffectView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            visualEffectView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
-        ])
-        
-        contentView.layer?.cornerRadius = 12
+        // Add border
+        contentView.wantsLayer = true
+        contentView.layer?.cornerRadius = 8
+        contentView.layer?.borderWidth = 1
+        contentView.layer?.borderColor = NSColor.separatorColor.cgColor
         contentView.layer?.masksToBounds = true
     }
     
@@ -173,26 +56,28 @@ class FormattingOverlay {
         print("⚡ Executing command: \(command)")
         
         switch command {
-        case "Format as Title":
-            KeyboardMonitor.sendFormattingShortcut(.title)
-        case "Format as Heading":
-            KeyboardMonitor.sendFormattingShortcut(.heading)
-        case "Format as Subheading":
-            KeyboardMonitor.sendFormattingShortcut(.subheading)
-        case "Format as Body":
-            KeyboardMonitor.sendFormattingShortcut(.body)
-        case "Create Checklist":
-            KeyboardMonitor.sendFormattingShortcut(.checklist)
-        case "Create Bulleted List":
-            KeyboardMonitor.sendFormattingShortcut(.bulletedList)
-        case "Create Numbered List":
-            KeyboardMonitor.sendFormattingShortcut(.numberedList)
-        case "Format as Code":
-            KeyboardMonitor.sendFormattingShortcut(.monostyled)
-        case "Insert Table":
+        case "Title":
+            KeyboardMonitor.sendFormattingShortcutSafely(.title)
+        case "Heading":
+            KeyboardMonitor.sendFormattingShortcutSafely(.heading)
+        case "Subheading":
+            KeyboardMonitor.sendFormattingShortcutSafely(.subheading)
+        case "Body":
+            KeyboardMonitor.sendFormattingShortcutSafely(.body)
+        case "Checklist":
+            KeyboardMonitor.sendFormattingShortcutSafely(.checklist)
+        case "Bulleted List":
+            KeyboardMonitor.sendFormattingShortcutSafely(.bulletedList)
+        case "Numbered List":
+            KeyboardMonitor.sendFormattingShortcutSafely(.numberedList)
+        case "Code":
+            KeyboardMonitor.sendFormattingShortcutSafely(.monostyled)
+        case "Table":
             insertTable()
-        case "Insert Link":
-            insertLink()
+        case "Bold":
+            KeyboardMonitor.sendFormattingShortcutSafely(.bold)
+        case "Italic":
+            KeyboardMonitor.sendFormattingShortcutSafely(.italic)
         default:
             break
         }
@@ -200,38 +85,18 @@ class FormattingOverlay {
         hideCommandPalette()
     }
     
+    private func insertTable() {
+        let tableText = """
+        
+        | Header 1 | Header 2 | Header 3 |
+        |----------|----------|----------|
+        | Cell 1   | Cell 2   | Cell 3   |
+        
+        """
+        KeyboardMonitor.typeTextViaClipboardSafely(tableText)
+    }
+    
     // MARK: - Public Interface
-    
-    func showFormattingBar(at point: NSPoint? = nil) {
-        guard let window = formattingWindow else { return }
-        
-        let targetPoint = point ?? getSelectionPoint()
-        
-        // Position window near selection or cursor
-        let windowFrame = NSRect(
-            x: targetPoint.x - 200, // Center horizontally
-            y: targetPoint.y + 30,  // Position above selection
-            width: 400,
-            height: 60
-        )
-        
-        window.setFrame(windowFrame, display: true)
-        window.orderFront(nil)
-        isVisible = true
-        
-        print("📊 Showing formatting bar at \(targetPoint)")
-        
-        // Auto-hide after 10 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
-            self.hideFormattingBar()
-        }
-    }
-    
-    func hideFormattingBar() {
-        formattingWindow?.orderOut(nil)
-        isVisible = false
-        print("📊 Hiding formatting bar")
-    }
     
     func showCommandPalette() {
         guard let window = commandPaletteWindow else { return }
@@ -240,10 +105,10 @@ class FormattingOverlay {
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
             let windowFrame = NSRect(
-                x: screenFrame.midX - 250,
-                y: screenFrame.midY - 150,
-                width: 500,
-                height: 300
+                x: screenFrame.midX - 200,
+                y: screenFrame.midY - 125,
+                width: 400,
+                height: 250
             )
             
             window.setFrame(windowFrame, display: true)
@@ -251,6 +116,11 @@ class FormattingOverlay {
         
         window.orderFront(nil)
         window.makeKey()
+        
+        // Focus on search field
+        if let contentView = window.contentView as? SimpleCommandPaletteView {
+            contentView.focusSearchField()
+        }
         
         print("🎯 Showing command palette")
     }
@@ -261,102 +131,22 @@ class FormattingOverlay {
     }
     
     func hide() {
-        hideFormattingBar()
         hideCommandPalette()
     }
     
-    // MARK: - Utilities
+    // For backwards compatibility
+    func showFormattingBar(at point: NSPoint? = nil) {
+        showCommandPalette()
+    }
     
-    private func getSelectionPoint() -> NSPoint {
-        // Try to get cursor position from Notes
-        // For now, use mouse location as fallback
-        let mouseLocation = NSEvent.mouseLocation
-        return NSPoint(x: mouseLocation.x, y: mouseLocation.y)
+    func hideFormattingBar() {
+        hideCommandPalette()
     }
 }
 
-// MARK: - Formatting Actions
+// MARK: - Simple Command Palette View
 
-enum FormattingAction {
-    case bold, italic, underline
-    case title, heading, subheading, body
-    case checklist, bulletedList, numberedList, monostyled
-    case insertLink, insertTable
-}
-
-// MARK: - Formatting Bar View
-
-class FormattingBarView: NSView {
-    
-    var onButtonPressed: ((FormattingAction) -> Void)?
-    
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        setupUI()
-    }
-    
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setupUI()
-    }
-    
-    private func setupUI() {
-        wantsLayer = true
-        
-        let stackView = NSStackView()
-        stackView.orientation = .horizontal
-        stackView.spacing = 8
-        stackView.distribution = .fillEqually
-        
-        // Create formatting buttons
-        let buttons: [(String, FormattingAction, String)] = [
-            ("B", .bold, "Bold"),
-            ("I", .italic, "Italic"),
-            ("U", .underline, "Underline"),
-            ("T1", .title, "Title"),
-            ("T2", .heading, "Heading"),
-            ("T3", .subheading, "Subheading"),
-            ("●", .bulletedList, "Bulleted List"),
-            ("✓", .checklist, "Checklist"),
-            ("🔗", .insertLink, "Insert Link"),
-            ("⊞", .insertTable, "Insert Table")
-        ]
-        
-        for (title, action, tooltip) in buttons {
-            let button = NSButton()
-            button.title = title
-            button.bezelStyle = .rounded
-            button.toolTip = tooltip
-            button.target = self
-            button.action = #selector(buttonPressed(_:))
-            button.tag = action.rawValue
-            
-            // Style the button
-            button.font = NSFont.systemFont(ofSize: 12, weight: .medium)
-            
-            stackView.addArrangedSubview(button)
-        }
-        
-        addSubview(stackView)
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            stackView.centerXAnchor.constraint(equalTo: centerXAnchor),
-            stackView.centerYAnchor.constraint(equalTo: centerYAnchor),
-            stackView.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 10),
-            stackView.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -10)
-        ])
-    }
-    
-    @objc private func buttonPressed(_ sender: NSButton) {
-        if let action = FormattingAction(rawValue: sender.tag) {
-            onButtonPressed?(action)
-        }
-    }
-}
-
-// MARK: - Command Palette View
-
-class CommandPaletteView: NSView, NSTableViewDataSource, NSTableViewDelegate, NSTextFieldDelegate {
+class SimpleCommandPaletteView: NSView, NSTableViewDataSource, NSTableViewDelegate, NSTextFieldDelegate {
     
     var onCommandSelected: ((String) -> Void)?
     var onDismiss: (() -> Void)?
@@ -366,19 +156,9 @@ class CommandPaletteView: NSView, NSTableViewDataSource, NSTableViewDelegate, NS
     private var scrollView: NSScrollView!
     
     private let allCommands = [
-        "Format as Title",
-        "Format as Heading", 
-        "Format as Subheading",
-        "Format as Body",
-        "Create Checklist",
-        "Create Bulleted List",
-        "Create Numbered List",
-        "Format as Code",
-        "Insert Table",
-        "Insert Link",
-        "Bold Text",
-        "Italic Text",
-        "Underline Text"
+        "Title", "Heading", "Subheading", "Body",
+        "Checklist", "Bulleted List", "Numbered List",
+        "Code", "Table", "Bold", "Italic"
     ]
     
     private var filteredCommands: [String] = []
@@ -397,18 +177,23 @@ class CommandPaletteView: NSView, NSTableViewDataSource, NSTableViewDelegate, NS
         wantsLayer = true
         filteredCommands = allCommands
         
+        // Title label
+        let titleLabel = NSTextField(labelWithString: "⌘ Command Palette")
+        titleLabel.font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        titleLabel.textColor = NSColor.labelColor
+        
         // Search field
         searchField = NSTextField()
-        searchField.placeholderString = "Type to search commands..."
+        searchField.placeholderString = "Search commands..."
         searchField.delegate = self
-        searchField.font = NSFont.systemFont(ofSize: 14)
+        searchField.font = NSFont.systemFont(ofSize: 13)
         
         // Table view
         tableView = NSTableView()
         tableView.dataSource = self
         tableView.delegate = self
         tableView.headerView = nil
-        tableView.intercellSpacing = NSSize(width: 0, height: 4)
+        tableView.intercellSpacing = NSSize(width: 0, height: 2)
         tableView.backgroundColor = NSColor.clear
         tableView.selectionHighlightStyle = .regular
         
@@ -425,19 +210,24 @@ class CommandPaletteView: NSView, NSTableViewDataSource, NSTableViewDelegate, NS
         scrollView.backgroundColor = NSColor.clear
         
         // Layout
+        addSubview(titleLabel)
         addSubview(searchField)
         addSubview(scrollView)
         
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
         searchField.translatesAutoresizingMaskIntoConstraints = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
-            searchField.topAnchor.constraint(equalTo: topAnchor, constant: 16),
+            titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+            titleLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
+            
+            searchField.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
             searchField.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             searchField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            searchField.heightAnchor.constraint(equalToConstant: 24),
+            searchField.heightAnchor.constraint(equalToConstant: 22),
             
-            scrollView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 12),
+            scrollView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 8),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             scrollView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16)
@@ -448,6 +238,12 @@ class CommandPaletteView: NSView, NSTableViewDataSource, NSTableViewDelegate, NS
             if self.filteredCommands.count > 0 {
                 self.tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
             }
+        }
+    }
+    
+    func focusSearchField() {
+        DispatchQueue.main.async {
+            self.window?.makeFirstResponder(self.searchField)
         }
     }
     
@@ -525,65 +321,24 @@ class CommandPaletteView: NSView, NSTableViewDataSource, NSTableViewDelegate, NS
         textField.isBordered = false
         textField.backgroundColor = NSColor.clear
         textField.isEditable = false
-        textField.font = NSFont.systemFont(ofSize: 13)
+        textField.font = NSFont.systemFont(ofSize: 12)
         
         cellView.addSubview(textField)
         textField.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            textField.leadingAnchor.constraint(equalTo: cellView.leadingAnchor, constant: 8),
-            textField.trailingAnchor.constraint(equalTo: cellView.trailingAnchor, constant: -8),
+            textField.leadingAnchor.constraint(equalTo: cellView.leadingAnchor, constant: 6),
+            textField.trailingAnchor.constraint(equalTo: cellView.trailingAnchor, constant: -6),
             textField.centerYAnchor.constraint(equalTo: cellView.centerYAnchor)
         ])
         
         return cellView
     }
     
+    func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
+        return 20
+    }
+    
     func tableViewSelectionDidChange(_ notification: Notification) {
-        // Visual feedback could go here
-    }
-    
-    func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
-        return true
-    }
-}
-
-// MARK: - FormattingAction Extension
-
-extension FormattingAction {
-    var rawValue: Int {
-        switch self {
-        case .bold: return 0
-        case .italic: return 1
-        case .underline: return 2
-        case .title: return 3
-        case .heading: return 4
-        case .subheading: return 5
-        case .body: return 6
-        case .checklist: return 7
-        case .bulletedList: return 8
-        case .numberedList: return 9
-        case .monostyled: return 10
-        case .insertLink: return 11
-        case .insertTable: return 12
-        }
-    }
-    
-    init?(rawValue: Int) {
-        switch rawValue {
-        case 0: self = .bold
-        case 1: self = .italic
-        case 2: self = .underline
-        case 3: self = .title
-        case 4: self = .heading
-        case 5: self = .subheading
-        case 6: self = .body
-        case 7: self = .checklist
-        case 8: self = .bulletedList
-        case 9: self = .numberedList
-        case 10: self = .monostyled
-        case 11: self = .insertLink
-        case 12: self = .insertTable
-        default: return nil
-        }
+        // Handle selection change if needed
     }
 }
