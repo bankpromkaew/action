@@ -1,0 +1,114 @@
+name: Build and Release Apple Notes Plugin
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Install create-dmg
+      run: brew install create-dmg
+      
+    - name: Set version
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+        else
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        fi
+        
+    - name: Update version in build script
+      run: |
+        sed -i '' "s/VERSION=\"1.0.0\"/VERSION=\"${{ env.VERSION }}\"/" release-build.sh
+        
+    - name: Make scripts executable
+      run: |
+        chmod +x build.sh
+        chmod +x release-build.sh
+        
+    - name: Build Apple Notes Plugin
+      run: ./release-build.sh
+      
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+      with:
+        tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', env.VERSION) || github.ref_name }}
+        name: Apple Notes Enhancer v${{ env.VERSION }}
+        body: |
+          # Apple Notes Enhancer v${{ env.VERSION }}
+          
+          ## 🎉 The Ultimate Apple Notes Plugin
+          
+          Transform your Apple Notes experience with powerful enhancements:
+          
+          ### ✨ Features
+          - **Markdown Support**: Type `#` for headings, `-` for lists, `>` for quotes
+          - **Slash Commands**: Use `/heading`, `/checklist`, `/quote` and more
+          - **Command Palette**: Press `⌘P` in Notes for quick actions
+          - **Formatting Toolbar**: Visual formatting controls
+          - **Background Operation**: Works seamlessly in the background
+          - **Privacy First**: All processing happens locally on your Mac
+          
+          ### 📥 Installation
+          1. Download the ZIP file below
+          2. Extract and drag `Apple Notes Enhancer.app` to `/Applications`
+          3. Run the app (look for icon in menu bar)
+          4. Grant Accessibility and Input Monitoring permissions when prompted
+          
+          ### 🔐 Required Permissions
+          - **Accessibility**: For reading and modifying Notes content
+          - **Input Monitoring**: For detecting markdown shortcuts
+          
+          ### 💻 System Requirements
+          - macOS Monterey (12.0) or later
+          - Apple Notes app installed
+          
+          ### 🚀 Getting Started
+          1. Open Apple Notes
+          2. Start typing: `# My Heading` (automatically formats)
+          3. Try slash commands: `/checklist` or `/quote`
+          4. Press `⌘P` for the command palette
+          
+          ---
+          
+          **Need help?** Check the included `INSTALL.md` for detailed setup instructions.
+        files: |
+          ./build/package/Apple-Notes-Enhancer-${{ env.VERSION }}.zip
+          ./build/package/Apple-Notes-Enhancer-${{ env.VERSION }}.dmg
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Update README with download link
+      if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+      run: |
+        # Update README with latest release link
+        RELEASE_TAG="${{ github.event_name == 'workflow_dispatch' && format('v{0}', env.VERSION) || github.ref_name }}"
+        sed -i '' "s|releases/download/v[0-9]\+\.[0-9]\+\.[0-9]\+|releases/download/${RELEASE_TAG}|g" README.md || true
+        
+        # Commit and push if there are changes
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add README.md
+        git diff --staged --quiet || git commit -m "Update download links to ${RELEASE_TAG}"
+        git push || true

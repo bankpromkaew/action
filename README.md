@@ -1,6 +1,17 @@
 # Apple Notes Enhancer
 
-A powerful macOS application that supercharges Apple Notes with modern note-taking features like markdown support, slash commands, formatting overlays, and command palette.
+🔌 **The Ultimate Plugin for Apple Notes** - Transform your Apple Notes into a powerful markdown editor with modern note-taking features.
+
+> **Download Latest Release**: [📥 Download v1.0.0](https://github.com/your-username/apple-notes-enhancer/releases/latest)
+
+## 🎯 What is this?
+
+This is a **macOS plugin** that supercharges your existing Apple Notes app with:
+- **Markdown shortcuts** that work in real-time
+- **Slash commands** for quick formatting  
+- **Command palette** (⌘P) for instant actions
+- **Visual formatting toolbar**
+- **Background operation** - no interference with your workflow
 
 ## 🌟 Features
 
@@ -39,6 +50,34 @@ A powerful macOS application that supercharges Apple Notes with modern note-taki
 - Auto-detects when Notes app is active
 - Only operates when Notes is in focus
 - Seamless integration with existing Notes workflow
+
+## 📥 Plugin Installation & Usage
+
+### Quick Install (Recommended)
+1. **Download**: Get the latest release from [GitHub Releases](https://github.com/your-username/apple-notes-enhancer/releases/latest)
+2. **Extract**: Unzip the downloaded file
+3. **Install**: Drag `Apple Notes Enhancer.app` to your `/Applications` folder
+4. **Launch**: Open the app (it appears in your menu bar)
+5. **Permissions**: Grant Accessibility and Input Monitoring when prompted
+
+### How to Use
+**📖 [Complete User Guide](USER_GUIDE.md)** | **⚡ [Quick Start Guide](QUICK_START.md)**
+
+**Essential shortcuts:**
+- Type `# ` for headings, `- ` for lists, `> ` for quotes
+- Use `/heading`, `/checklist`, `/quote` for instant formatting  
+- Press `⌘P` in Notes for command palette
+- Select text to see visual formatting toolbar
+
+### Required Permissions
+- **Accessibility**: Allows reading and modifying Notes content
+- **Input Monitoring**: Enables markdown shortcuts and command detection
+
+### Verify Installation
+1. Open Apple Notes
+2. Type `# Hello World` - it should automatically format as a heading
+3. Press `⌘P` to see the command palette
+4. Look for the Notes Enhancer icon in your menu bar
 
 ## 🚀 Quick Start
 
@@ -234,6 +273,39 @@ open AppleNotesEnhancer.xcodeproj
 1. **Select text first** - Highlight text before expecting bar
 2. **Wait a moment** - Bar appears after brief delay
 3. **Check overlays** - Ensure no other windows blocking
+
+## 🛠️ Plugin Development & Deployment
+
+### Deploy as Apple Notes Plugin
+
+To build and deploy this as a ready-to-distribute plugin:
+
+```bash
+# Quick deployment (builds and packages everything)
+chmod +x deploy-plugin.sh
+./deploy-plugin.sh
+
+# Manual build steps
+chmod +x build.sh release-build.sh
+./release-build.sh
+```
+
+### Automatic GitHub Releases
+
+This project includes GitHub Actions for automatic plugin deployment:
+
+1. **Tag Release**: `git tag v1.0.0 && git push origin v1.0.0`
+2. **Manual Release**: Go to GitHub Actions → Run "Build and Release Apple Notes Plugin"
+3. **Result**: Automatic ZIP/DMG creation and GitHub Release
+
+### Distribution Options
+
+- **GitHub Releases**: Direct download for users (recommended)
+- **Mac App Store**: Wider distribution (requires Apple Developer account)
+- **Homebrew**: `brew install apple-notes-enhancer` (developer-friendly)
+- **Direct Distribution**: Custom DMG/ZIP deployment
+
+See `apple-notes-plugin-deployment.md` for complete deployment guide.
 
 ## 🔮 Future Enhancements
 
